@@ -29,6 +29,13 @@ export type { CachedData, CacheMetadata } from './domain/entities/CachedData';
 export { CacheStrategy } from './domain/strategies/CacheStrategy';
 
 // =============================================================================
+// DOMAIN LAYER - Utilities
+// =============================================================================
+
+export { CacheCalculator } from './domain/utils/CacheCalculator';
+export { CacheKeyBuilder } from './domain/utils/CacheKeyBuilder';
+
+// =============================================================================
 // DOMAIN LAYER - QueryClient Singleton
 // =============================================================================
 

@@ -1,6 +1,6 @@
 {
   "name": "@umituz/react-native-cache",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "TanStack Query cache management and configuration for React Native apps with centralized cache strategies",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

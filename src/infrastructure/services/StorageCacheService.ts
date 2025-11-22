@@ -5,6 +5,8 @@
 
 import type { IStorageCacheRepository } from '../../application/ports/IStorageCacheRepository';
 import type { CachedData } from '../../domain/entities/CachedData';
+import { CacheCalculator } from '../../domain/utils/CacheCalculator';
+import { CacheType } from '../../domain/types/CacheType';
 
 /**
  * Storage cache service
@@ -49,6 +51,19 @@ export class StorageCacheService {
     const data = await fetcher();
     await this.set(key, data, expiryMs);
     return data;
+  }
+
+  /**
+   * Get or fetch data with cache type
+   * Uses cache strategy to determine expiry
+   */
+  async getOrFetchByType<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    type: CacheType,
+  ): Promise<T> {
+    const expiryMs = CacheCalculator.getExpiryMsForType(type);
+    return this.getOrFetch(key, fetcher, expiryMs);
   }
 
   /**
