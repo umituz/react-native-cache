@@ -6,7 +6,39 @@
  *
  * Usage:
  *   import { DEFAULT_QUERY_CONFIG, setQueryClient, getQueryClient } from '@umituz/react-native-cache';
+ *   import { StorageCacheService, CacheStrategy, CacheType } from '@umituz/react-native-cache';
  */
+
+// =============================================================================
+// DOMAIN LAYER - Types
+// =============================================================================
+
+export { CacheType } from './domain/types/CacheType';
+export type { CacheConfig } from './domain/types/CacheType';
+
+// =============================================================================
+// DOMAIN LAYER - Entities
+// =============================================================================
+
+export type { CachedData, CacheMetadata } from './domain/entities/CachedData';
+
+// =============================================================================
+// DOMAIN LAYER - Strategies
+// =============================================================================
+
+export { CacheStrategy } from './domain/strategies/CacheStrategy';
+
+// =============================================================================
+// DOMAIN LAYER - QueryClient Singleton
+// =============================================================================
+
+export { getQueryClient, setQueryClient, hasQueryClient } from './domain/queryClient';
+
+// =============================================================================
+// APPLICATION LAYER - Ports
+// =============================================================================
+
+export type { IStorageCacheRepository } from './application/ports/IStorageCacheRepository';
 
 // =============================================================================
 // INFRASTRUCTURE LAYER - Cache Configuration
@@ -22,14 +54,20 @@ export {
 } from './infrastructure/config/cache.config';
 
 // =============================================================================
+// INFRASTRUCTURE LAYER - Repositories
+// =============================================================================
+
+export { StorageCacheRepository } from './infrastructure/repositories/StorageCacheRepository';
+
+// =============================================================================
+// INFRASTRUCTURE LAYER - Services
+// =============================================================================
+
+export { StorageCacheService } from './infrastructure/services/StorageCacheService';
+
+// =============================================================================
 // INFRASTRUCTURE LAYER - Middleware
 // =============================================================================
 
 export { requestDeduplicationMiddleware } from './infrastructure/middleware/RequestDeduplicationMiddleware';
-
-// =============================================================================
-// DOMAIN LAYER - QueryClient Singleton
-// =============================================================================
-
-export { getQueryClient, setQueryClient, hasQueryClient } from './domain/queryClient';
 
