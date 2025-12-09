@@ -38,7 +38,7 @@ export function useCachedValue<T>(
       .finally(() => {
         setIsLoading(false);
       });
-  }, [cacheName, key, config?.ttl]);
+  }, [cacheName, key, config?.ttl, fetcher]);
 
   const invalidate = () => {
     const cache = cacheManager.getCache<T>(cacheName);
@@ -46,10 +46,18 @@ export function useCachedValue<T>(
     setValue(undefined);
   };
 
+  const invalidatePattern = (pattern: string): number => {
+    const cache = cacheManager.getCache<T>(cacheName);
+    const count = cache.invalidatePattern(pattern);
+    setValue(undefined);
+    return count;
+  };
+
   return {
     value,
     isLoading,
     error,
     invalidate,
+    invalidatePattern,
   };
 }

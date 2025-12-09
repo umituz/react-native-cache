@@ -46,6 +46,15 @@ export function useCache<T>(cacheName: string, config?: CacheConfig) {
     forceUpdate({});
   }, [cache]);
 
+  const invalidatePattern = useCallback(
+    (pattern: string): number => {
+      const count = cache.invalidatePattern(pattern);
+      forceUpdate({});
+      return count;
+    },
+    [cache]
+  );
+
   const getStats = useCallback(() => {
     return cache.getStats();
   }, [cache]);
@@ -56,6 +65,7 @@ export function useCache<T>(cacheName: string, config?: CacheConfig) {
     has,
     remove,
     clear,
+    invalidatePattern,
     getStats,
   };
 }

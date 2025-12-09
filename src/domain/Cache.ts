@@ -77,6 +77,21 @@ export class Cache<T = unknown> {
     return this.store.delete(key);
   }
 
+  invalidatePattern(pattern: string): number {
+    const regex = this.convertPatternToRegex(pattern);
+    let invalidatedCount = 0;
+
+    for (const key of this.store.keys()) {
+      if (regex.test(key)) {
+        this.store.delete(key);
+        invalidatedCount++;
+      }
+    }
+
+    this.stats.size = this.store.size;
+    return invalidatedCount;
+  }
+
   clear(): void {
     this.store.clear();
     this.stats = {
@@ -86,6 +101,13 @@ export class Cache<T = unknown> {
       evictions: 0,
       expirations: 0,
     };
+  }
+
+  private convertPatternToRegex(pattern: string): RegExp {
+    const escapedPattern = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*');
+    return new RegExp(`^${escapedPattern}$`);
   }
 
   getStats(): CacheStats {
