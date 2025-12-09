@@ -54,6 +54,21 @@ export class CacheStrategy {
   }
 
   /**
+   * Get cache configuration for public/shared data
+   * Public data is read-heavy, write-light, eventual consistency acceptable
+   * Examples: Community posts, leaderboards, product listings, shared resources
+   */
+  static getPublicDataConfig(): CacheConfig {
+    return {
+      staleTime: TIME.MINUTE * 30, // 30 minutes
+      gcTime: TIME.HOUR * 2, // 2 hours
+      refetchOnMount: false,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    };
+  }
+
+  /**
    * Get cache configuration by type
    */
   static getConfigByType(type: CacheType): CacheConfig {
@@ -64,6 +79,8 @@ export class CacheStrategy {
         return this.getUserDataConfig();
       case CacheType.REALTIME_DATA:
         return this.getRealtimeDataConfig();
+      case CacheType.PUBLIC_DATA:
+        return this.getPublicDataConfig();
       default:
         return this.getUserDataConfig();
     }

@@ -128,7 +128,7 @@ export const USER_DATA_CACHE = {
 /**
  * Real-time Data Cache Settings
  *
- * For data that updates in real-time via Supabase subscriptions.
+ * For data that updates in real-time via subscriptions.
  * These have short staleTime because updates are pushed via realtime.
  *
  * Strategy:
@@ -141,6 +141,46 @@ export const REALTIME_DATA_CACHE = {
   LIVE_SESSIONS: {
     staleTime: TIME.MINUTE, // 1 minute - updates via realtime
     gcTime: TIME.MINUTE * 30, // 30 minutes
+  },
+} as const;
+
+/**
+ * Public/Shared Data Cache Settings
+ *
+ * For public content that is read-heavy and write-light.
+ * Eventual consistency is acceptable for this type of data.
+ *
+ * Strategy:
+ * - Medium-long staleTime: Balance freshness with reduced read operations
+ * - Long gcTime: Keep popular public content in memory
+ * - Eventual consistency: OK to show slightly stale data
+ *
+ * Use cases:
+ * - Community posts, public galleries
+ * - Leaderboards, global rankings
+ * - Product listings, catalogs
+ * - Shared resources, public profiles
+ */
+export const PUBLIC_DATA_CACHE = {
+  // Public content (community posts, galleries, shared content)
+  // Changes: When users create/update content
+  PUBLIC_CONTENT: {
+    staleTime: TIME.MINUTE * 30, // 30 minutes - eventual consistency OK
+    gcTime: TIME.HOUR * 2, // 2 hours - keep popular content
+  },
+
+  // Leaderboards, rankings, global stats
+  // Changes: Periodically updated (not real-time)
+  LEADERBOARDS: {
+    staleTime: TIME.MINUTE * 15, // 15 minutes - updates frequently
+    gcTime: TIME.HOUR, // 1 hour
+  },
+
+  // Product listings, catalogs
+  // Changes: Admin updates only
+  CATALOG: {
+    staleTime: TIME.HOUR, // 1 hour - rarely changes
+    gcTime: TIME.HOUR * 4, // 4 hours
   },
 } as const;
 
@@ -188,18 +228,20 @@ export const ENV_CACHE_CONFIG = {
  *
  * Quick reference for choosing cache settings:
  *
- * | Data Type          | Update Frequency | staleTime | gcTime | Example               |
- * |--------------------|------------------|-----------|--------|-----------------------|
- * | Master Data        | Rarely           | 1-24 hrs  | 1 week | Meditation types      |
- * | User Data          | Moderate         | 2-5 mins  | 1 hour | Sessions, statistics  |
- * | Real-time Data     | Frequent         | 1 min     | 30 min | Live updates          |
- * | Paginated Lists    | Varies           | 2-5 mins  | 1 hour | Session history       |
- * | Search Results     | Dynamic          | 1 min     | 30 min | Sound search          |
+ * | Data Type          | Update Frequency | staleTime  | gcTime  | Example                    |
+ * |--------------------|------------------|------------|---------|----------------------------|
+ * | Master Data        | Rarely           | 1-24 hrs   | 1 week  | Categories, app config     |
+ * | User Data          | Moderate         | 2-5 mins   | 1 hour  | Sessions, user stats       |
+ * | Real-time Data     | Frequent         | 1 min      | 30 min  | Live notifications, chat   |
+ * | Public Data        | Read-heavy       | 15-30 mins | 2 hours | Community posts, rankings  |
+ * | Paginated Lists    | Varies           | 2-5 mins   | 1 hour  | History, feeds             |
+ * | Search Results     | Dynamic          | 1 min      | 30 min  | Search queries             |
  *
  * Guidelines:
  * 1. If data rarely changes → MASTER_DATA_CACHE
  * 2. If data changes per user action → USER_DATA_CACHE
  * 3. If data updates in real-time → REALTIME_DATA_CACHE
- * 4. If unsure → Use DEFAULT_QUERY_CONFIG
+ * 4. If data is public/shared, read-heavy → PUBLIC_DATA_CACHE
+ * 5. If unsure → Use DEFAULT_QUERY_CONFIG
  */
 

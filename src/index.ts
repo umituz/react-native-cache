@@ -56,6 +56,7 @@ export {
   MASTER_DATA_CACHE,
   USER_DATA_CACHE,
   REALTIME_DATA_CACHE,
+  PUBLIC_DATA_CACHE,
   DEFAULT_QUERY_CONFIG,
   ENV_CACHE_CONFIG,
 } from './infrastructure/config/cache.config';
