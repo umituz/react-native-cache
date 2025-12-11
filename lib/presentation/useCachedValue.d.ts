@@ -10,5 +10,6 @@ export declare function useCachedValue<T>(cacheName: string, key: string, fetche
     error: Error | null;
     invalidate: () => void;
     invalidatePattern: (pattern: string) => number;
+    refetch: () => void;
 };
 //# sourceMappingURL=useCachedValue.d.ts.map

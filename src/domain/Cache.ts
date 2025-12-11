@@ -3,22 +3,28 @@
  */
 
 import type { CacheEntry, CacheConfig, CacheStats, EvictionStrategy } from './types/Cache';
+import { CacheStatsTracker } from './CacheStatsTracker';
+import { PatternMatcher } from './PatternMatcher';
+import { LRUStrategy } from './strategies/LRUStrategy';
+import { LFUStrategy } from './strategies/LFUStrategy';
+import { FIFOStrategy } from './strategies/FIFOStrategy';
+import { TTLStrategy } from './strategies/TTLStrategy';
 
 export class Cache<T = unknown> {
   private store = new Map<string, CacheEntry<T>>();
   private config: Required<CacheConfig>;
-  private stats: CacheStats = {
-    size: 0,
-    hits: 0,
-    misses: 0,
-    evictions: 0,
-    expirations: 0,
+  private statsTracker = new CacheStatsTracker();
+  private strategies = {
+    lru: new LRUStrategy<T>(),
+    lfu: new LFUStrategy<T>(),
+    fifo: new FIFOStrategy<T>(),
+    ttl: new TTLStrategy<T>(),
   };
 
   constructor(config: CacheConfig = {}) {
     this.config = {
       maxSize: config.maxSize || 100,
-      defaultTTL: config.defaultTTL || 5 * 60 * 1000, // 5 minutes
+      defaultTTL: config.defaultTTL || 5 * 60 * 1000,
       onEvict: config.onEvict || (() => {}),
       onExpire: config.onExpire || (() => {}),
     };
@@ -38,28 +44,32 @@ export class Cache<T = unknown> {
     };
 
     this.store.set(key, entry);
-    this.stats.size = this.store.size;
+    this.statsTracker.updateSize(this.store.size);
+    
+    if (__DEV__) {
+      console.log(`Cache: Set key "${key}" with TTL ${entry.ttl}ms`);
+    }
   }
 
   get(key: string): T | undefined {
     const entry = this.store.get(key);
 
     if (!entry) {
-      this.stats.misses++;
+      this.statsTracker.recordMiss();
       return undefined;
     }
 
     if (this.isExpired(entry)) {
       this.delete(key);
-      this.stats.misses++;
-      this.stats.expirations++;
+      this.statsTracker.recordMiss();
+      this.statsTracker.recordExpiration();
       this.config.onExpire(key, entry);
       return undefined;
     }
 
     entry.accessCount++;
     entry.lastAccess = Date.now();
-    this.stats.hits++;
+    this.statsTracker.recordHit();
     return entry.value;
   }
 
@@ -74,44 +84,34 @@ export class Cache<T = unknown> {
   }
 
   delete(key: string): boolean {
-    return this.store.delete(key);
+    const deleted = this.store.delete(key);
+    if (deleted) {
+      this.statsTracker.updateSize(this.store.size);
+    }
+    return deleted;
   }
 
   invalidatePattern(pattern: string): number {
-    const regex = this.convertPatternToRegex(pattern);
     let invalidatedCount = 0;
 
     for (const key of this.store.keys()) {
-      if (regex.test(key)) {
+      if (PatternMatcher.matchesPattern(key, pattern)) {
         this.store.delete(key);
         invalidatedCount++;
       }
     }
 
-    this.stats.size = this.store.size;
+    this.statsTracker.updateSize(this.store.size);
     return invalidatedCount;
   }
 
   clear(): void {
     this.store.clear();
-    this.stats = {
-      size: 0,
-      hits: 0,
-      misses: 0,
-      evictions: 0,
-      expirations: 0,
-    };
-  }
-
-  private convertPatternToRegex(pattern: string): RegExp {
-    const escapedPattern = pattern
-      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*/g, '.*');
-    return new RegExp(`^${escapedPattern}$`);
+    this.statsTracker.reset();
   }
 
   getStats(): CacheStats {
-    return { ...this.stats };
+    return this.statsTracker.getStats();
   }
 
   keys(): string[] {
@@ -123,72 +123,23 @@ export class Cache<T = unknown> {
   }
 
   private evictOne(strategy: EvictionStrategy): void {
-    let keyToEvict: string | undefined;
+    const evictionStrategy = this.strategies[strategy];
+    if (!evictionStrategy) return;
 
-    if (strategy === 'lru') {
-      keyToEvict = this.findLRU();
-    } else if (strategy === 'lfu') {
-      keyToEvict = this.findLFU();
-    } else if (strategy === 'fifo') {
-      keyToEvict = this.findFIFO();
-    } else if (strategy === 'ttl') {
-      keyToEvict = this.findNearestExpiry();
-    }
-
+    const keyToEvict = evictionStrategy.findKeyToEvict(this.store);
     if (keyToEvict) {
       const entry = this.store.get(keyToEvict);
       this.store.delete(keyToEvict);
-      this.stats.evictions++;
+      this.statsTracker.recordEviction();
+      this.statsTracker.updateSize(this.store.size);
+      
+      if (__DEV__) {
+        console.log(`Cache: Evicted key "${keyToEvict}" using ${strategy} strategy`);
+      }
+      
       if (entry) {
         this.config.onEvict(keyToEvict, entry);
       }
     }
-  }
-
-  private findLRU(): string | undefined {
-    let oldest: string | undefined;
-    let oldestTime = Infinity;
-
-    for (const [key, entry] of this.store.entries()) {
-      if (entry.lastAccess < oldestTime) {
-        oldestTime = entry.lastAccess;
-        oldest = key;
-      }
-    }
-
-    return oldest;
-  }
-
-  private findLFU(): string | undefined {
-    let least: string | undefined;
-    let leastCount = Infinity;
-
-    for (const [key, entry] of this.store.entries()) {
-      if (entry.accessCount < leastCount) {
-        leastCount = entry.accessCount;
-        least = key;
-      }
-    }
-
-    return least;
-  }
-
-  private findFIFO(): string | undefined {
-    return this.store.keys().next().value;
-  }
-
-  private findNearestExpiry(): string | undefined {
-    let nearest: string | undefined;
-    let nearestExpiry = Infinity;
-
-    for (const [key, entry] of this.store.entries()) {
-      const expiry = entry.timestamp + entry.ttl;
-      if (expiry < nearestExpiry) {
-        nearestExpiry = expiry;
-        nearest = key;
-      }
-    }
-
-    return nearest;
   }
 }

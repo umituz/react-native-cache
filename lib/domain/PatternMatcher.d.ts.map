@@ -1,0 +1,1 @@
+{"version":3,"file":"PatternMatcher.d.ts","sourceRoot":"","sources":["../../src/domain/PatternMatcher.ts"],"names":[],"mappings":"AAAA;;GAEG;AAEH,qBAAa,cAAc;IACzB,MAAM,CAAC,qBAAqB,CAAC,OAAO,EAAE,MAAM,GAAG,MAAM;IAOrD,MAAM,CAAC,cAAc,CAAC,GAAG,EAAE,MAAM,EAAE,OAAO,EAAE,MAAM,GAAG,OAAO;CAI7D"}

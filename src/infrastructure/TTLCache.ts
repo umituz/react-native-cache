@@ -7,12 +7,12 @@ import { Cache } from '../domain/Cache';
 import type { CacheConfig } from '../domain/types/Cache';
 
 export class TTLCache<T = unknown> extends Cache<T> {
-  private cleanupInterval: NodeJS.Timeout | null = null;
+  private cleanupInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: CacheConfig & { cleanupIntervalMs?: number } = {}) {
     super(config);
 
-    const cleanupIntervalMs = config.cleanupIntervalMs || 60000; // 1 minute
+    const cleanupIntervalMs = config.cleanupIntervalMs || 60000;
     this.startCleanup(cleanupIntervalMs);
   }
 
@@ -24,8 +24,16 @@ export class TTLCache<T = unknown> extends Cache<T> {
 
   private cleanup(): void {
     const keys = this.keys();
+    let cleanedCount = 0;
+    
     for (const key of keys) {
-      this.get(key); // This will auto-delete expired entries
+      if (this.get(key) === undefined) {
+        cleanedCount++;
+      }
+    }
+    
+    if (__DEV__ && cleanedCount > 0) {
+      console.log(`TTLCache: Cleaned up ${cleanedCount} expired entries`);
     }
   }
 

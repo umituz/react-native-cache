@@ -2,7 +2,7 @@
  * useCachedValue Hook
  */
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { cacheManager } from '../domain/CacheManager';
 import type { CacheConfig } from '../domain/types/Cache';
 
@@ -16,7 +16,7 @@ export function useCachedValue<T>(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  useEffect(() => {
+  const loadValue = useCallback(async () => {
     const cache = cacheManager.getCache<T>(cacheName, config);
     const cached = cache.get(key);
 
@@ -26,32 +26,39 @@ export function useCachedValue<T>(
     }
 
     setIsLoading(true);
-    fetcher()
-      .then((data) => {
-        cache.set(key, data, config?.ttl);
-        setValue(data);
-        setError(null);
-      })
-      .catch((err) => {
-        setError(err);
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
+    try {
+      const data = await fetcher();
+      cache.set(key, data, config?.ttl);
+      setValue(data);
+      setError(null);
+    } catch (err) {
+      setError(err as Error);
+    } finally {
+      setIsLoading(false);
+    }
   }, [cacheName, key, config?.ttl, fetcher]);
 
-  const invalidate = () => {
+  useEffect(() => {
+    loadValue();
+  }, [loadValue]);
+
+  const invalidate = useCallback(() => {
     const cache = cacheManager.getCache<T>(cacheName);
     cache.delete(key);
     setValue(undefined);
-  };
+  }, [cacheName, key]);
 
-  const invalidatePattern = (pattern: string): number => {
+  const invalidatePattern = useCallback((pattern: string): number => {
     const cache = cacheManager.getCache<T>(cacheName);
     const count = cache.invalidatePattern(pattern);
     setValue(undefined);
     return count;
-  };
+  }, [cacheName]);
+
+  const refetch = useCallback(() => {
+    setValue(undefined);
+    loadValue();
+  }, [loadValue]);
 
   return {
     value,
@@ -59,5 +66,6 @@ export function useCachedValue<T>(
     error,
     invalidate,
     invalidatePattern,
+    refetch,
   };
 }

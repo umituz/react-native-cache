@@ -2,7 +2,7 @@
  * useCache Hook
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { cacheManager } from '../domain/CacheManager';
 import type { CacheConfig } from '../domain/types/Cache';
 
@@ -10,12 +10,16 @@ export function useCache<T>(cacheName: string, config?: CacheConfig) {
   const cache = cacheManager.getCache<T>(cacheName, config);
   const [, forceUpdate] = useState({});
 
+  const triggerUpdate = useCallback(() => {
+    forceUpdate({});
+  }, []);
+
   const set = useCallback(
     (key: string, value: T, ttl?: number) => {
       cache.set(key, value, ttl);
-      forceUpdate({});
+      triggerUpdate();
     },
-    [cache]
+    [cache, triggerUpdate]
   );
 
   const get = useCallback(
@@ -35,24 +39,24 @@ export function useCache<T>(cacheName: string, config?: CacheConfig) {
   const remove = useCallback(
     (key: string): boolean => {
       const result = cache.delete(key);
-      forceUpdate({});
+      triggerUpdate();
       return result;
     },
-    [cache]
+    [cache, triggerUpdate]
   );
 
   const clear = useCallback(() => {
     cache.clear();
-    forceUpdate({});
-  }, [cache]);
+    triggerUpdate();
+  }, [cache, triggerUpdate]);
 
   const invalidatePattern = useCallback(
     (pattern: string): number => {
       const count = cache.invalidatePattern(pattern);
-      forceUpdate({});
+      triggerUpdate();
       return count;
     },
-    [cache]
+    [cache, triggerUpdate]
   );
 
   const getStats = useCallback(() => {
