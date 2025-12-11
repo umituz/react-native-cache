@@ -1,10 +1,11 @@
 {
   "name": "@umituz/react-native-cache",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "In-memory caching utilities with TTL, eviction strategies, pattern-based invalidation, and cache management for React Native",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./lib/index.js",
+  "types": "./lib/index.d.ts",
   "scripts": {
+    "build": "tsc",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit"
   },
@@ -38,6 +39,7 @@
     "access": "public"
   },
   "files": [
+    "lib",
     "src",
     "README.md",
     "LICENSE"
